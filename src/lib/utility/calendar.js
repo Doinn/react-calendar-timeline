@@ -313,10 +313,12 @@ export function groupStack(
 ) {
   // calculate non-overlapping positions
   let curHeight = groupHeight
-  let verticalMargin = (lineHeight - item.dimensions.height) / 2
+  let verticalMargin = Math.min(Math.abs((lineHeight - item.dimensions.height)) / 2, 8)
+  const computedLineHeight = item.dimensions.height > lineHeight ? 2 * verticalMargin + item.dimensions.height : lineHeight
+
   if (item.dimensions.stack && item.dimensions.top === null) {
     item.dimensions.top = groupTop + verticalMargin
-    curHeight = Math.max(curHeight, lineHeight)
+    curHeight = Math.max(curHeight, computedLineHeight)
     do {
       var collidingItem = null
       //Items are placed from i=0 onwards, only check items with index < i
@@ -336,7 +338,7 @@ export function groupStack(
 
       if (collidingItem != null) {
         // There is a collision. Reposition the items above the colliding element
-        item.dimensions.top = collidingItem.dimensions.top + lineHeight
+        item.dimensions.top = collidingItem.dimensions.top + Math.max(collidingItem.dimensions.height, lineHeight) + verticalMargin
         curHeight = Math.max(
           curHeight,
           item.dimensions.top + item.dimensions.height + verticalMargin - groupTop
@@ -397,12 +399,12 @@ export function stackAll(itemsDimensions, groupOrders, lineHeight, stackItems) {
     // Do this late as item position still needs to be calculated
     groupTops.push(groupTop)
     if (group.height) {
-      groupHeights.push(group.height)
+      groupHeights.push(Math.max(groupHeight, group.height))
     } else {
       groupHeights.push(Math.max(groupHeight, lineHeight))
     }
   }
-  
+
   return {
     height: sum(groupHeights),
     groupHeights,
@@ -411,11 +413,11 @@ export function stackAll(itemsDimensions, groupOrders, lineHeight, stackItems) {
 }
 
 /**
- * 
- * @param {*} itemsDimensions 
- * @param {*} isGroupStacked 
- * @param {*} lineHeight 
- * @param {*} groupTop 
+ *
+ * @param {*} itemsDimensions
+ * @param {*} isGroupStacked
+ * @param {*} lineHeight
+ * @param {*} groupTop
  */
 export function stackGroup(itemsDimensions, isGroupStacked, lineHeight, groupTop) {
   var groupHeight = 0
@@ -575,7 +577,7 @@ export function getItemDimensions({
     dimension.top = null
     dimension.order = groupOrders[_get(item, keys.itemGroupKey)]
     dimension.stack = !item.isOverlay
-    dimension.height = lineHeight * itemHeightRatio
+    dimension.height = Math.max(item.itemProps && item.itemProps.height ? item.itemProps.height : 0, lineHeight * itemHeightRatio)
     return {
       id: itemId,
       dimensions: dimension

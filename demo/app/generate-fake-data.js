@@ -34,7 +34,7 @@ export default function (groupCount = 30, itemCount = 1000, daysInPast = 30) {
       selectedBgColor: randomColor({ luminosity: 'light', seed: randomSeed + i, format:'rgba', alpha:1 }),
       color: randomColor({ luminosity: 'dark', seed: randomSeed + i }),
       itemProps: {
-        'data-tip': faker.hacker.phrase(),
+        'data-tip': faker.hacker.phrase()
       }
     })
   }
