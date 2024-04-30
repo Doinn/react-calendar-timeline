@@ -577,7 +577,7 @@ export function getItemDimensions({
     dimension.top = null
     dimension.order = groupOrders[_get(item, keys.itemGroupKey)]
     dimension.stack = !item.isOverlay
-    dimension.height = Math.max(item.itemProps && item.itemProps.height ? item.itemProps.height : 0, lineHeight * itemHeightRatio)
+    dimension.height = item.itemProps && item.itemProps.height ? item.itemProps.height : lineHeight * itemHeightRatio
     return {
       id: itemId,
       dimensions: dimension
