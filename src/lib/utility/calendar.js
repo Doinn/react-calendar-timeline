@@ -314,7 +314,7 @@ export function groupStack(
   // calculate non-overlapping positions
   let curHeight = groupHeight
   let verticalMargin = Math.min(Math.abs((lineHeight - item.dimensions.height)) / 2, 8)
-  const computedLineHeight = item.dimensions.height > lineHeight ? 2 * verticalMargin + item.dimensions.height : lineHeight
+  const computedLineHeight = 2 * verticalMargin + item.dimensions.height
 
   if (item.dimensions.stack && item.dimensions.top === null) {
     item.dimensions.top = groupTop + verticalMargin
@@ -338,7 +338,7 @@ export function groupStack(
 
       if (collidingItem != null) {
         // There is a collision. Reposition the items above the colliding element
-        item.dimensions.top = collidingItem.dimensions.top + Math.max(collidingItem.dimensions.height, lineHeight) + verticalMargin
+        item.dimensions.top = collidingItem.dimensions.top + collidingItem.dimensions.height + verticalMargin
         curHeight = Math.max(
           curHeight,
           item.dimensions.top + item.dimensions.height + verticalMargin - groupTop
