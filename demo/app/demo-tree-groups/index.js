@@ -42,13 +42,13 @@ export default class App extends Component {
       return Object.assign({}, group, {
         root: isRoot,
         parent: parent,
-        height: height
+        height
       })
     })
 
     const newItems = items.filter(item => {
       const group = newGroups.find(group => group.id === item.group);
-      return !group.root;
+      return group.root;
     });
 
     this.state = {
@@ -83,7 +83,7 @@ export default class App extends Component {
     const newGroups = groups
       .filter(g => g.root || openGroups[g.parent])
       .map(group => {
-        return Object.assign({}, group, {
+        return Object.assign({}, {...group, ...(openGroups[group.id] ? {height: 100} : {})}, {
           title: group.root ? (
             <div
               onClick={() => this.toggleGroup(parseInt(group.id))}
