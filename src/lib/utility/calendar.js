@@ -313,7 +313,7 @@ export function groupStack(
 ) {
   // calculate non-overlapping positions
   let curHeight = groupHeight
-  let verticalMargin = Math.min(Math.abs((lineHeight - item.dimensions.height)) / 2, 8)
+  let verticalMargin = 8
   const computedLineHeight = 2 * verticalMargin + item.dimensions.height
 
   if (item.dimensions.stack && item.dimensions.top === null) {
