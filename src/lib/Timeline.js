@@ -58,6 +58,8 @@ export default class ReactCalendarTimeline extends Component {
     itemTouchSendsClick: PropTypes.bool,
 
     horizontalLineClassNamesForGroup: PropTypes.func,
+    horizontalLineClassNamesForGroupCell: PropTypes.func,
+    groupIdCells: PropTypes.array,
 
     onItemMove: PropTypes.func,
     onItemResize: PropTypes.func,
@@ -149,6 +151,8 @@ export default class ReactCalendarTimeline extends Component {
     traditionalZoom: false,
 
     horizontalLineClassNamesForGroup: null,
+    horizontalLineClassNamesForGroupCell: null,
+    groupIdCells: [],
 
     onItemMove: null,
     onItemResize: null,
@@ -752,7 +756,7 @@ export default class ReactCalendarTimeline extends Component {
     }
   }
 
-  rows(canvasWidth, groupHeights, groups) {
+  rows(canvasTimeStart, canvasTimeEnd, minUnit, timeSteps, canvasWidth, groupHeights, groups) {
     return (
       <GroupRows
         groups={groups}
@@ -765,7 +769,15 @@ export default class ReactCalendarTimeline extends Component {
         horizontalLineClassNamesForGroup={
           this.props.horizontalLineClassNamesForGroup
         }
+        horizontalLineClassNamesForGroupCell={
+          this.props.horizontalLineClassNamesForGroupCell
+        }
         onRowContextClick={this.handleScrollContextMenu}
+        canvasTimeStart={canvasTimeStart}
+        canvasTimeEnd={canvasTimeEnd}
+        timeSteps={timeSteps}
+        minUnit={minUnit}
+        groupIdCells={this.props.groupIdCells}
       />
     )
   }
@@ -1049,7 +1061,15 @@ export default class ReactCalendarTimeline extends Component {
                       timeSteps,
                       height
                     )}
-                    {this.rows(canvasWidth, groupHeights, groups)}
+                    {this.rows(
+                      canvasTimeStart,
+                      canvasTimeEnd,
+                      minUnit,
+                      timeSteps,
+                      canvasWidth,
+                      groupHeights,
+                      groups
+                    )}
                     {this.items(
                       canvasTimeStart,
                       zoom,
