@@ -5,6 +5,7 @@ import Item from './Item'
 
 import { _get, arraysEqual, keyBy } from '../utility/generic'
 import { getGroupOrders, getVisibleItems } from '../utility/calendar'
+import { TimelineStateConsumer } from '../timeline/TimelineStateContext'
 
 const canResizeLeft = (item, canResize) => {
   const value =
@@ -18,7 +19,7 @@ const canResizeRight = (item, canResize) => {
   return value === 'right' || value === 'both' || value === true
 }
 
-export default class Items extends Component {
+class Items extends Component {
   static propTypes = {
     groups: PropTypes.oneOfType([PropTypes.array, PropTypes.object]).isRequired,
     items: PropTypes.oneOfType([PropTypes.array, PropTypes.object]).isRequired,
@@ -54,7 +55,9 @@ export default class Items extends Component {
     dimensionItems: PropTypes.array,
     groupTops: PropTypes.array,
     useResizeHandle: PropTypes.bool,
-    scrollRef: PropTypes.object
+    scrollRef: PropTypes.object,
+    visibleRowFirst: PropTypes.number,
+    visibleRowLast: PropTypes.number
   }
 
   static defaultProps = {
@@ -77,7 +80,9 @@ export default class Items extends Component {
       nextProps.canChangeGroup === this.props.canChangeGroup &&
       nextProps.canMove === this.props.canMove &&
       nextProps.canResize === this.props.canResize &&
-      nextProps.canSelect === this.props.canSelect     
+      nextProps.canSelect === this.props.canSelect &&
+      nextProps.visibleRowFirst === this.props.visibleRowFirst &&
+      nextProps.visibleRowLast === this.props.visibleRowLast
     )
   }
 
@@ -102,7 +107,9 @@ export default class Items extends Component {
       canvasTimeEnd,
       dimensionItems,
       keys,
-      groups
+      groups,
+      visibleRowFirst,
+      visibleRowLast
     } = this.props
     const { itemIdKey, itemGroupKey } = keys
 
@@ -114,10 +121,21 @@ export default class Items extends Component {
     )
     const sortedDimensionItems = keyBy(dimensionItems, 'id')
 
+    const useVirtualization =
+      visibleRowFirst !== undefined &&
+      visibleRowFirst >= 0 &&
+      visibleRowLast >= visibleRowFirst
+
     return (
       <div className="rct-items">
         {visibleItems
           .filter(item => sortedDimensionItems[_get(item, itemIdKey)])
+          .filter(item => {
+            if (!useVirtualization) return true
+            const order = groupOrders[_get(item, itemGroupKey)]
+            const idx = order && typeof order === 'object' ? order.index : order
+            return idx >= visibleRowFirst && idx <= visibleRowLast
+          })
           .map(item => (
             <Item
               key={_get(item, itemIdKey)}
@@ -168,3 +186,18 @@ export default class Items extends Component {
     )
   }
 }
+
+const ItemsWrapper = props => (
+  <TimelineStateConsumer>
+    {({ visibleRowFirst, visibleRowLast }) => (
+      <Items
+        visibleRowFirst={visibleRowFirst}
+        visibleRowLast={visibleRowLast}
+        {...props}
+      />
+    )}
+  </TimelineStateConsumer>
+)
+
+export { Items as RawItems }
+export default ItemsWrapper

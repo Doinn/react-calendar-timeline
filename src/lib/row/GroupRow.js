@@ -15,12 +15,16 @@ class GroupRow extends Component {
     group: PropTypes.object.isRequired,
     horizontalLineClassNamesForGroup: PropTypes.func,
     horizontalLineClassNamesForGroupCell: PropTypes.func,
-    canvasTimeStart: PropTypes.number.isRequired,
-    canvasTimeEnd: PropTypes.number.isRequired,
-    minUnit: PropTypes.string.isRequired,
-    timeSteps: PropTypes.object.isRequired,
-    getLeftOffsetFromDate: PropTypes.func.isRequired,
+    canvasTimeStart: PropTypes.number,
+    canvasTimeEnd: PropTypes.number,
+    minUnit: PropTypes.string,
+    timeSteps: PropTypes.object,
+    getLeftOffsetFromDate: PropTypes.func,
     groupIdCells: PropTypes.array
+  }
+
+  static defaultProps = {
+    groupIdCells: []
   }
 
   render() {

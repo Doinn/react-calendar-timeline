@@ -44,6 +44,9 @@ export class TimelineStateProvider extends React.Component {
     showPeriod: PropTypes.func.isRequired,
     timelineUnit: PropTypes.string.isRequired,
     timelineWidth: PropTypes.number.isRequired,
+    visibleRowFirst: PropTypes.number,
+    visibleRowLast: PropTypes.number,
+    groupTopsPrefixSum: PropTypes.array,
   }
 
   constructor(props) {
@@ -101,8 +104,25 @@ export class TimelineStateProvider extends React.Component {
   }
 
   render() {
+    const { visibleRowFirst, visibleRowLast, groupTopsPrefixSum } = this.props
+    if (
+      !this._cachedValue ||
+      this._lastFirst !== visibleRowFirst ||
+      this._lastLast !== visibleRowLast ||
+      this._lastPrefix !== groupTopsPrefixSum
+    ) {
+      this._lastFirst = visibleRowFirst
+      this._lastLast = visibleRowLast
+      this._lastPrefix = groupTopsPrefixSum
+      this._cachedValue = {
+        ...this.state.timelineContext,
+        visibleRowFirst,
+        visibleRowLast,
+        groupTopsPrefixSum
+      }
+    }
     return (
-      <Provider value={this.state.timelineContext}>
+      <Provider value={this._cachedValue}>
         {this.props.children}
       </Provider>
     )

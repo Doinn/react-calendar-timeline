@@ -319,6 +319,9 @@ export default class ReactCalendarTimeline extends Component {
     this.state.height = height
     this.state.groupHeights = groupHeights
     this.state.groupTops = groupTops
+    this.state.visibleRowFirst = -1
+    this.state.visibleRowLast = -1
+    this.state.groupTopsPrefixSum = [0]
 
     /* eslint-enable */
   }
@@ -333,6 +336,19 @@ export default class ReactCalendarTimeline extends Component {
     windowResizeDetector.addListener(this)
 
     this.lastTouchDistance = null
+
+    this._rafScrollPending = false
+    this._onWindowScroll = () => {
+      if (this._rafScrollPending) return
+      this._rafScrollPending = true
+      requestAnimationFrame(() => {
+        this._rafScrollPending = false
+        this.updateVirtualRowRange()
+      })
+    }
+    window.addEventListener('scroll', this._onWindowScroll, { passive: true })
+    window.addEventListener('resize', this._onWindowScroll)
+    this.updateVirtualRowRange()
   }
 
   componentWillUnmount() {
@@ -341,6 +357,42 @@ export default class ReactCalendarTimeline extends Component {
     }
 
     windowResizeDetector.removeListener(this)
+
+    if (this._onWindowScroll) {
+      window.removeEventListener('scroll', this._onWindowScroll)
+      window.removeEventListener('resize', this._onWindowScroll)
+    }
+  }
+
+  updateVirtualRowRange = () => {
+    if (!this.container || !this.state.groupHeights) return
+    // eslint-disable-next-line global-require
+    const { buildPrefixSum, findVisibleRange } = require('./utility/rowVirtualization')
+    const rect = this.container.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+    const calendarTop = rect.top + window.scrollY
+    const scrollTop = Math.max(0, window.scrollY - calendarTop)
+
+    const heights = this.state.groupHeights
+    const prefixSum = buildPrefixSum(heights)
+    const { first, last } = findVisibleRange({
+      prefixSum,
+      scrollTop,
+      viewportHeight,
+      overscan: 5
+    })
+
+    if (
+      first !== this.state.visibleRowFirst ||
+      last !== this.state.visibleRowLast ||
+      prefixSum !== this.state.groupTopsPrefixSum
+    ) {
+      this.setState({
+        visibleRowFirst: first,
+        visibleRowLast: last,
+        groupTopsPrefixSum: prefixSum
+      })
+    }
   }
 
   static getDerivedStateFromProps(nextProps, prevState) {
@@ -431,6 +483,10 @@ export default class ReactCalendarTimeline extends Component {
     if (componentScrollLeft !== scrollLeft) {
       this.scrollComponent.scrollLeft = scrollLeft
       this.scrollHeaderRef.scrollLeft = scrollLeft
+    }
+
+    if (prevState.groupHeights !== this.state.groupHeights) {
+      this.updateVirtualRowRange()
     }
   }
 
@@ -1016,6 +1072,10 @@ export default class ReactCalendarTimeline extends Component {
       height: `${height}px`
     }
 
+    const virtFirst = isInteractingWithItem ? 0 : this.state.visibleRowFirst
+    const virtLast = isInteractingWithItem
+      ? groups.length - 1
+      : this.state.visibleRowLast
     return (
       <TimelineStateProvider
         visibleTimeStart={visibleTimeStart}
@@ -1026,6 +1086,9 @@ export default class ReactCalendarTimeline extends Component {
         showPeriod={this.showPeriod}
         timelineUnit={minUnit}
         timelineWidth={this.state.width}
+        visibleRowFirst={virtFirst}
+        visibleRowLast={virtLast}
+        groupTopsPrefixSum={this.state.groupTopsPrefixSum}
       >
         <TimelineMarkersProvider>
           <TimelineHeadersProvider

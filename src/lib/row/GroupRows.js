@@ -15,17 +15,20 @@ const passThroughPropTypes = {
     horizontalLineClassNamesForGroup: PropTypes.func,
     horizontalLineClassNamesForGroupCell: PropTypes.func,
     onRowContextClick: PropTypes.func.isRequired,
-    canvasTimeStart: PropTypes.number.isRequired,
-    canvasTimeEnd: PropTypes.number.isRequired,
-    minUnit: PropTypes.string.isRequired,
-    timeSteps: PropTypes.object.isRequired,
+    canvasTimeStart: PropTypes.number,
+    canvasTimeEnd: PropTypes.number,
+    minUnit: PropTypes.string,
+    timeSteps: PropTypes.object,
     groupIdCells: PropTypes.array
   }
 
 class GroupRows extends Component {
   static propTypes = {
     ...passThroughPropTypes,
-    getLeftOffsetFromDate: PropTypes.func.isRequired
+    getLeftOffsetFromDate: PropTypes.func,
+    visibleRowFirst: PropTypes.number,
+    visibleRowLast: PropTypes.number,
+    groupTopsPrefixSum: PropTypes.array
   }
 
   shouldComponentUpdate(nextProps) {
@@ -38,7 +41,9 @@ class GroupRows extends Component {
       nextProps.canvasTimeEnd === this.props.canvasTimeEnd &&
       nextProps.minUnit === this.props.minUnit &&
       nextProps.timeSteps === this.props.timeSteps &&
-      nextProps.groupIdCells === this.props.groupIdCells
+      nextProps.groupIdCells === this.props.groupIdCells &&
+      nextProps.visibleRowFirst === this.props.visibleRowFirst &&
+      nextProps.visibleRowLast === this.props.visibleRowLast
     )
   }
 
@@ -59,11 +64,44 @@ class GroupRows extends Component {
       minUnit,
       timeSteps,
       getLeftOffsetFromDate,
-      groupIdCells
+      groupIdCells,
+      visibleRowFirst,
+      visibleRowLast,
+      groupTopsPrefixSum
     } = this.props
-    let lines = []
 
-    for (let i = 0; i < lineCount; i++) {
+    const useVirtualization =
+      visibleRowFirst !== undefined &&
+      visibleRowFirst >= 0 &&
+      visibleRowLast >= visibleRowFirst &&
+      groupTopsPrefixSum &&
+      groupTopsPrefixSum.length > 1
+
+    const first = useVirtualization ? visibleRowFirst : 0
+    const last = useVirtualization
+      ? Math.min(visibleRowLast, lineCount - 1)
+      : lineCount - 1
+    const topSpacerHeight = useVirtualization
+      ? groupTopsPrefixSum[first] || 0
+      : 0
+    const totalHeight = useVirtualization
+      ? groupTopsPrefixSum[lineCount] || 0
+      : 0
+    const bottomSpacerHeight = useVirtualization
+      ? Math.max(0, totalHeight - (groupTopsPrefixSum[last + 1] || 0))
+      : 0
+
+    const lines = []
+    if (topSpacerHeight > 0) {
+      lines.push(
+        <div
+          key="rct-virtual-top-spacer"
+          style={{ height: `${topSpacerHeight}px`, width: `${canvasWidth}px` }}
+        />
+      )
+    }
+
+    for (let i = first; i <= last; i++) {
       lines.push(
         <GroupRow
           clickTolerance={clickTolerance}
@@ -90,6 +128,15 @@ class GroupRows extends Component {
       )
     }
 
+    if (bottomSpacerHeight > 0) {
+      lines.push(
+        <div
+          key="rct-virtual-bottom-spacer"
+          style={{ height: `${bottomSpacerHeight}px`, width: `${canvasWidth}px` }}
+        />
+      )
+    }
+
     return <div className="rct-horizontal-lines">{lines}</div>
   }
 }
@@ -97,15 +144,24 @@ class GroupRows extends Component {
 const GroupRowsWrapper = ({ ...props }) => {
   return (
     <TimelineStateConsumer>
-      {({ getLeftOffsetFromDate }) => (
-        <GroupRows getLeftOffsetFromDate={getLeftOffsetFromDate} {...props} />
+      {({
+        getLeftOffsetFromDate,
+        visibleRowFirst,
+        visibleRowLast,
+        groupTopsPrefixSum
+      }) => (
+        <GroupRows
+          getLeftOffsetFromDate={getLeftOffsetFromDate}
+          visibleRowFirst={visibleRowFirst}
+          visibleRowLast={visibleRowLast}
+          groupTopsPrefixSum={groupTopsPrefixSum}
+          {...props}
+        />
       )}
     </TimelineStateConsumer>
   )
 }
 
-GroupRowsWrapper.defaultProps = {
-  ...passThroughPropTypes
-}
+GroupRowsWrapper.propTypes = passThroughPropTypes
 
 export default GroupRowsWrapper

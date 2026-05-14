@@ -2,8 +2,9 @@ import PropTypes from 'prop-types'
 import React, { Component } from 'react'
 
 import { _get, arraysEqual } from '../utility/generic'
+import { TimelineStateConsumer } from '../timeline/TimelineStateContext'
 
-export default class Sidebar extends Component {
+class Sidebar extends Component {
   static propTypes = {
     groups: PropTypes.oneOfType([PropTypes.array, PropTypes.object]).isRequired,
     width: PropTypes.number.isRequired,
@@ -12,6 +13,9 @@ export default class Sidebar extends Component {
     keys: PropTypes.object.isRequired,
     groupRenderer: PropTypes.func,
     isRightSidebar: PropTypes.bool,
+    visibleRowFirst: PropTypes.number,
+    visibleRowLast: PropTypes.number,
+    groupTopsPrefixSum: PropTypes.array
   }
 
   shouldComponentUpdate(nextProps) {
@@ -20,7 +24,9 @@ export default class Sidebar extends Component {
       nextProps.width === this.props.width &&
       nextProps.height === this.props.height &&
       arraysEqual(nextProps.groups, this.props.groups) &&
-      arraysEqual(nextProps.groupHeights, this.props.groupHeights)
+      arraysEqual(nextProps.groupHeights, this.props.groupHeights) &&
+      nextProps.visibleRowFirst === this.props.visibleRowFirst &&
+      nextProps.visibleRowLast === this.props.visibleRowLast
     )
   }
 
@@ -36,7 +42,15 @@ export default class Sidebar extends Component {
   }
 
   render() {
-    const { width, groupHeights, height, isRightSidebar } = this.props
+    const {
+      width,
+      groupHeights,
+      height,
+      isRightSidebar,
+      visibleRowFirst,
+      visibleRowLast,
+      groupTopsPrefixSum
+    } = this.props
 
     const { groupIdKey, groupTitleKey, groupRightTitleKey } = this.props.keys
 
@@ -49,17 +63,43 @@ export default class Sidebar extends Component {
       width: `${width}px`
     }
 
-    let groupLines = this.props.groups.map((group, index) => {
-      const elementStyle = {
-        height: `${groupHeights[index]}px`,
-        lineHeight: `${groupHeights[index]}px`
-      }
+    const total = this.props.groups.length
+    const useVirtualization =
+      visibleRowFirst !== undefined &&
+      visibleRowFirst >= 0 &&
+      visibleRowLast >= visibleRowFirst &&
+      groupTopsPrefixSum &&
+      groupTopsPrefixSum.length > 1
 
-      return (
+    const first = useVirtualization ? visibleRowFirst : 0
+    const last = useVirtualization
+      ? Math.min(visibleRowLast, total - 1)
+      : total - 1
+    const topSpacer = useVirtualization ? groupTopsPrefixSum[first] || 0 : 0
+    const totalHeightPx = useVirtualization
+      ? groupTopsPrefixSum[total] || 0
+      : 0
+    const bottomSpacer = useVirtualization
+      ? Math.max(0, totalHeightPx - (groupTopsPrefixSum[last + 1] || 0))
+      : 0
+
+    const groupLines = []
+    if (topSpacer > 0) {
+      groupLines.push(
+        <div key="rct-sidebar-top-spacer" style={{ height: `${topSpacer}px` }} />
+      )
+    }
+    for (let i = first; i <= last; i++) {
+      const group = this.props.groups[i]
+      const elementStyle = {
+        height: `${groupHeights[i]}px`,
+        lineHeight: `${groupHeights[i]}px`
+      }
+      groupLines.push(
         <div
           key={_get(group, groupIdKey)}
           className={
-            'rct-sidebar-row rct-sidebar-row-' + (index % 2 === 0 ? 'even' : 'odd')
+            'rct-sidebar-row rct-sidebar-row-' + (i % 2 === 0 ? 'even' : 'odd')
           }
           style={elementStyle}
         >
@@ -71,7 +111,15 @@ export default class Sidebar extends Component {
           )}
         </div>
       )
-    })
+    }
+    if (bottomSpacer > 0) {
+      groupLines.push(
+        <div
+          key="rct-sidebar-bottom-spacer"
+          style={{ height: `${bottomSpacer}px` }}
+        />
+      )
+    }
 
     return (
       <div
@@ -83,3 +131,19 @@ export default class Sidebar extends Component {
     )
   }
 }
+
+const SidebarWrapper = props => (
+  <TimelineStateConsumer>
+    {({ visibleRowFirst, visibleRowLast, groupTopsPrefixSum }) => (
+      <Sidebar
+        visibleRowFirst={visibleRowFirst}
+        visibleRowLast={visibleRowLast}
+        groupTopsPrefixSum={groupTopsPrefixSum}
+        {...props}
+      />
+    )}
+  </TimelineStateConsumer>
+)
+
+export { Sidebar as RawSidebar }
+export default SidebarWrapper
