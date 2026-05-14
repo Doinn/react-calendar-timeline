@@ -1,4 +1,4 @@
-import { buildPrefixSum, findVisibleRange } from './rowVirtualization'
+import { buildPrefixSum, findVisibleRange } from 'lib/utility/rowVirtualization'
 
 describe('buildPrefixSum', () => {
   test('returns [0] for empty input', () => {
